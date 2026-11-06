@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>하늘섬 탐험가</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#9bdcff;font-family:system-ui,-apple-system,sans-serif;touch-action:none}canvas{display:block}#hud{position:fixed;inset:0;pointer-events:none;color:white;text-shadow:0 2px 5px #17405e}#top{position:absolute;top:16px;left:16px;font-weight:800;font-size:19px}#count{position:absolute;top:18px;right:18px;background:#164d70aa;padding:9px 14px;border-radius:20px;font-weight:700}#hint{position:absolute;top:58px;left:16px;font-size:13px}#joystick{position:absolute;bottom:24px;left:24px;width:116px;height:116px;border-radius:50%;background:#ffffff35;border:2px solid #ffffff99;pointer-events:auto}#stick{position:absolute;width:48px;height:48px;left:32px;top:32px;border-radius:50%;background:#fff9;box-shadow:0 2px 8px #245}#jump{position:absolute;bottom:35px;right:28px;width:78px;height:78px;border:0;border-radius:50%;background:#ffcf58;color:#5a3b00;font-weight:900;font-size:16px;pointer-events:auto;box-shadow:0 5px 0 #c58b27}#toast{position:absolute;top:45%;width:100%;text-align:center;font-size:25px;font-weight:900;opacity:0;transition:opacity .2s}#start{position:fixed;inset:0;background:linear-gradient(#65b9edaa,#244f76aa);display:grid;place-items:center;color:white;text-align:center}#panel{padding:28px;border-radius:24px;background:#164d70dd;max-width:330px;margin:20px}#panel h1{margin:0 0 10px;font-size:27px}#panel p{line-height:1.6}#go{border:0;border-radius:30px;padding:14px 30px;background:#ffcf58;font-size:17px;font-weight:900;color:#513500}
+</style>
+</head>
+<body>
+<div id="hud"><div id="top">☁️ 하늘섬 탐험가</div><div id="count">💎 0 / 8</div><div id="hint">섬 곳곳의 빛나는 수정을 모아 보세요</div><div id="joystick"><div id="stick"></div></div><button id="jump">점프</button><div id="toast">모든 수정 수집 완료!</div></div>
+<div id="start"><div id="panel"><h1>하늘섬 탐험가</h1><p>구름 위에 떠 있는 신비한 섬을 탐험하고<br>숨겨진 수정을 모아 보세요!</p><button id="go">탐험 시작</button></div></div>
+<script type="module">
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
+const scene=new THREE.Scene();scene.background=new THREE.Color(0x91d5fa);scene.fog=new THREE.Fog(0x91d5fa,35,100);
+const camera=new THREE.PerspectiveCamera(65,innerWidth/innerHeight,.1,150);
+const renderer=new THREE.WebGLRenderer({antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,1.7));renderer.setSize(innerWidth,innerHeight);renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;document.body.appendChild(renderer.domElement);
+scene.add(new THREE.HemisphereLight(0xdff5ff,0x65845e,2));const sun=new THREE.DirectionalLight(0xfff1cf,2.5);sun.position.set(-8,18,10);sun.castShadow=true;scene.add(sun);
+const mat=(c,r=.85)=>new THREE.MeshStandardMaterial({color:c,roughness:r});
+const grass=mat(0x68b86d),rock=mat(0x786b80),sand=mat(0x9c8b79),wood=mat(0x805331),leaf=mat(0x328c68),white=mat(0xffffff),gold=mat(0xffd84d,.3);
+const island=new THREE.Group();scene.add(island);
+const top=new THREE.Mesh(new THREE.CylinderGeometry(10,7.4,2.3,9,1),grass);top.position.y=0;top.receiveShadow=true;top.castShadow=true;island.add(top);
+const under=new THREE.Mesh(new THREE.ConeGeometry(7.5,8,9),rock);under.position.y=-5;under.rotation.y=.2;under.castShadow=true;island.add(under);
+const ring=new THREE.Mesh(new THREE.TorusGeometry(9.7,.12,8,80),gold);ring.rotation.x=Math.PI/2;ring.position.y=1.18;island.add(ring);
+function tree(x,z,s=1){let g=new THREE.Group();let t=new THREE.Mesh(new THREE.CylinderGeometry(.18*s,.28*s,1.5*s,7),wood);t.position.y=.75*s;t.castShadow=true;g.add(t);for(let i=0;i<3;i++){let l=new THREE.Mesh(new THREE.ConeGeometry((1.0-i*.16)*s,1.5*s,7),leaf);l.position.y=(1.5+i*.55)*s;l.castShadow=true;g.add(l)}g.position.set(x,1.05,z);island.add(g)}
+for(const p of [[-5,-3,1.1],[5,-3,.9],[-6,3,.8],[4,5,1.1],[0,-6,.7]])tree(...p);
+for(let i=0;i<13;i++){let a=i*2.4,r=3.8+(i%4)*1.25;let b=new THREE.Mesh(new THREE.DodecahedronGeometry(.45+(i%3)*.18,0),i%2?rock:sand);b.position.set(Math.cos(a)*r,1.2,Math.sin(a)*r);b.castShadow=true;island.add(b)}
+const clouds=new THREE.Group();scene.add(clouds);for(let i=0;i<24;i++){let g=new THREE.Group();for(let j=0;j<5;j++){let m=new THREE.Mesh(new THREE.SphereGeometry(1.2+Math.random()*.7,12,10),white);m.position.set((j-2)*.9,Math.random()*.5,Math.random()*.5);g.add(m)}g.position.set((Math.random()-.5)*75,-8-Math.random()*8,(Math.random()-.5)*75);g.scale.setScalar(.8+Math.random()*1.2);clouds.add(g)}
+const player=new THREE.Group();scene.add(player);const body=new THREE.Mesh(new THREE.CapsuleGeometry(.42,.85,4,8),mat(0x2865a8));body.position.y=.95;body.castShadow=true;player.add(body);const head=new THREE.Mesh(new THREE.SphereGeometry(.34,16,12),mat(0xffd2a5));head.position.y=1.75;head.castShadow=true;player.add(head);const pack=new THREE.Mesh(new THREE.BoxGeometry(.55,.65,.25),mat(0x9b5b32));pack.position.set(0,1.05,-.42);player.add(pack);player.position.set(0,1.2,5);
+const crystals=[];for(let i=0;i<8;i++){let a=i*Math.PI*2/8+.3,r=4.8+(i%2)*1.3;let c=new THREE.Mesh(new THREE.OctahedronGeometry(.58),new THREE.MeshStandardMaterial({color:0x62f4ff,emissive:0x16a9e8,emissiveIntensity:1.5,metalness:.25,roughness:.2}));c.position.set(Math.cos(a)*r,2,Math.sin(a)*r);c.userData.baseY=2;c.castShadow=true;scene.add(c);crystals.push(c)}
+let collected=0,started=false,moveX=0,moveY=0,vy=0,onGround=true,yaw=0,camYaw=0,lastX=0,lastY=0,drag=false;
+const joy=document.querySelector('#joystick'),stick=document.querySelector('#stick');
+joy.addEventListener('pointerdown',e=>{joy.setPointerCapture(e.pointerId);joyMove(e)});joy.addEventListener('pointermove',e=>{if(e.buttons)joyMove(e)});function joyMove(e){let r=joy.getBoundingClientRect(),x=e.clientX-(r.left+r.width/2),y=e.clientY-(r.top+r.height/2),d=Math.hypot(x,y),k=Math.min(1,48/(d||1));x*=k;y*=k;stick.style.transform=`translate(${x}px,${y}px)`;moveX=x/48;moveY=y/48}function joyReset(){moveX=moveY=0;stick.style.transform='translate(0,0)'}joy.addEventListener('pointerup',joyReset);joy.addEventListener('pointercancel',joyReset);
+document.querySelector('#jump').addEventListener('pointerdown',()=>{if(onGround){vy=7.5;onGround=false}});
+renderer.domElement.addEventListener('pointerdown',e=>{if(e.clientX>innerWidth*.35){drag=true;lastX=e.clientX;lastY=e.clientY;renderer.domElement.setPointerCapture(e.pointerId)}});renderer.domElement.addEventListener('pointermove',e=>{if(drag){camYaw-=(e.clientX-lastX)*.006;lastX=e.clientX;lastY=e.clientY}});renderer.domElement.addEventListener('pointerup',()=>drag=false);renderer.domElement.addEventListener('pointercancel',()=>drag=false);
+document.querySelector('#go').onclick=()=>{started=true;document.querySelector('#start').style.display='none'};
+const clock=new THREE.Clock();let elapsed=0;
+function animate(){requestAnimationFrame(animate);let dt=Math.min(clock.getDelta(),.04);elapsed+=dt;
+crystals.forEach((c,i)=>{if(c.visible){c.rotation.y+=dt*1.5;c.position.y=c.userData.baseY+Math.sin(elapsed*2+i)*.2}});
+clouds.position.x=Math.sin(elapsed*.04)*2;
+if(started){let forward=new THREE.Vector3(-Math.sin(camYaw),0,-Math.cos(camYaw)),right=new THREE.Vector3(Math.cos(camYaw),0,-Math.sin(camYaw));let dir=forward.multiplyScalar(-moveY).add(right.multiplyScalar(moveX));if(dir.length()>1)dir.normalize();player.position.addScaledVector(dir,dt*5);player.position.x=THREE.MathUtils.clamp(player.position.x,-8.5,8.5);player.position.z=THREE.MathUtils.clamp(player.position.z,-8.5,8.5);if(dir.lengthSq()>.01)player.rotation.y=Math.atan2(dir.x,dir.z);vy-=18*dt;player.position.y+=vy*dt;if(player.position.y<=1.2){player.position.y=1.2;vy=0;onGround=true}
+for(const c of crystals){if(c.visible&&player.position.distanceTo(c.position)<1.35){c.visible=false;collected++;document.querySelector('#count').textContent='💎 '+collected+' / 8';if(collected===8){let t=document.querySelector('#toast');t.style.opacity=1;setTimeout(()=>t.style.opacity=0,3000)}}}}
+let target=new THREE.Vector3(player.position.x,player.position.y+1.2,player.position.z);let dist=9;camera.position.set(target.x+Math.sin(camYaw)*dist,target.y+5,target.z+Math.cos(camYaw)*dist);camera.lookAt(target);renderer.render(scene,camera)}
+animate();addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
+</script>
+</body></html>
