@@ -77,7 +77,25 @@ let collected=Array.isArray(saveData.collected)?saveData.collected.length:0,star
 crystals.forEach((c,i)=>{if(saveData.collected.includes(i))c.visible=false});
 player.position.set(saveData.player?.x??0,1.2,saveData.player?.z??5);
 const countEl=document.querySelector('#count'),invCrystals=document.querySelector('#invCrystals'),invDust=document.querySelector('#invDust'),questProgress=document.querySelector('#questProgress'),questClaim=document.querySelector('#questClaim');
-function updatePanels(){countEl.textContent='💎 '+collected+' / 16';invCrystals.textContent=collected;invDust.textContent=saveData.dust||0;questProgress.textContent=Math.min(collected,5)+' / 5';questClaim.disabled=collected<5||saveData.questClaimed;questClaim.textContent=saveData.questClaimed?'보상 수령 완료':'보상 받기'}
+function updatePanels(){
+ countEl.textContent='💎 '+collected+' / 16';invCrystals.textContent=collected;invDust.textContent=saveData.dust||0;
+ const questBox=document.querySelector('#quest');
+ if(!saveData.questClaimed){
+  questBox.querySelector('b').textContent='📜 첫 번째 의뢰';
+  questBox.children[1].textContent='수정 5개 모으기';
+  questProgress.textContent=Math.min(collected,5)+' / 5';
+  questClaim.disabled=collected<5;
+  questClaim.textContent='보상 받기';
+  questBox.style.display='block';
+ }else if(saveData.forestQuestAccepted&&!saveData.forestQuestClaimed){
+  questBox.querySelector('b').textContent='📜 안내자의 의뢰';
+  questBox.children[1].textContent='동쪽 숲섬 도착 + 수정 3개';
+  questProgress.textContent=(player.position.x>13?'섬 도착':'섬 미도착')+' · '+Math.min(collected,3)+' / 3';
+  questClaim.disabled=!(player.position.x>13&&collected>=3);
+  questClaim.textContent='별가루 5개 받기';
+  questBox.style.display='block';
+ }else{questBox.style.display='none'}
+}
 function saveGame(){saveData.collected=crystals.map((c,i)=>c.visible?null:i).filter(i=>i!==null);saveData.player={x:player.position.x,z:player.position.z};try{localStorage.setItem('skyIslandSaveV2',JSON.stringify(saveData));document.querySelector('#saveStatus').textContent='자동 저장 완료'}catch(e){document.querySelector('#saveStatus').textContent='이 기기에서는 저장할 수 없어요'}}
 updatePanels();
 const talkBtn=document.querySelector('#talkBtn'),dialog=document.querySelector('#dialog'),dialogText=document.querySelector('#dialogText'),dialogAction=document.querySelector('#dialogAction');
@@ -92,7 +110,12 @@ document.querySelector('#dialogClose').addEventListener('click',()=>dialog.class
 dialogAction.addEventListener('click',()=>{if(!saveData.forestQuestAccepted){saveData.forestQuestAccepted=true;refreshGuideQuest();saveGame()}else if(!saveData.forestQuestClaimed&&forestQuestDone()){saveData.forestQuestClaimed=true;saveData.dust=(saveData.dust||0)+5;refreshGuideQuest();updatePanels();saveGame();const t=document.querySelector('#toast');t.textContent='✨ 별가루 5개 획득!';t.style.opacity=1;setTimeout(()=>{t.style.opacity=0;t.textContent='모든 수정 수집 완료!'},2200)}});
 document.querySelector('#inventoryBtn').addEventListener('click',()=>document.querySelector('#inventory').classList.toggle('open'));
 document.querySelector('#inventoryClose').addEventListener('click',()=>document.querySelector('#inventory').classList.remove('open'));
-questClaim.addEventListener('click',()=>{if(collected>=5&&!saveData.questClaimed){saveData.questClaimed=true;saveData.dust=(saveData.dust||0)+3;updatePanels();saveGame();const t=document.querySelector('#toast');t.textContent='✨ 별가루 3개 획득!';t.style.opacity=1;setTimeout(()=>{t.style.opacity=0;t.textContent='모든 수정 수집 완료!'},2200)}});
+questClaim.addEventListener('click',()=>{
+ let reward=0,message='';
+ if(!saveData.questClaimed&&collected>=5){saveData.questClaimed=true;reward=3;message='✨ 별가루 3개 획득!'}
+ else if(saveData.forestQuestAccepted&&!saveData.forestQuestClaimed&&player.position.x>13&&collected>=3){saveData.forestQuestClaimed=true;reward=5;message='✨ 별가루 5개 획득!'}
+ if(reward){saveData.dust=(saveData.dust||0)+reward;updatePanels();saveGame();const t=document.querySelector('#toast');t.textContent=message;t.style.opacity=1;setTimeout(()=>{t.style.opacity=0;t.textContent='모든 수정 수집 완료!'},2200)}
+});
 
 const joy=document.querySelector('#joystick'),stick=document.querySelector('#stick');
 joy.addEventListener('pointerdown',e=>{joy.setPointerCapture(e.pointerId);joyMove(e)});joy.addEventListener('pointermove',e=>{if(e.buttons)joyMove(e)});function joyMove(e){let r=joy.getBoundingClientRect(),x=e.clientX-(r.left+r.width/2),y=e.clientY-(r.top+r.height/2),d=Math.hypot(x,y),k=Math.min(1,48/(d||1));x*=k;y*=k;stick.style.transform=`translate(${x}px,${y}px)`;moveX=x/48;moveY=y/48}function joyReset(){moveX=moveY=0;stick.style.transform='translate(0,0)'}joy.addEventListener('pointerup',joyReset);joy.addEventListener('pointercancel',joyReset);
@@ -103,7 +126,7 @@ const clock=new THREE.Clock();let elapsed=0,lastAutoSave=0;
 function animate(){requestAnimationFrame(animate);let dt=Math.min(clock.getDelta(),.04);elapsed+=dt;
 crystals.forEach((c,i)=>{if(c.visible){c.rotation.y+=dt*1.5;c.position.y=c.userData.baseY+Math.sin(elapsed*2+i)*.2}});
 clouds.position.x=Math.sin(elapsed*.04)*2;
-if(started){let guideDistance=player.position.distanceTo(guide.position);talkBtn.style.display=guideDistance<3.6&&!dialog.classList.contains('open')?'block':'none';if(dialog.classList.contains('open')&&saveData.forestQuestAccepted&&!saveData.forestQuestClaimed)refreshGuideQuest();let forward=new THREE.Vector3(-Math.sin(camYaw),0,-Math.cos(camYaw)),right=new THREE.Vector3(Math.cos(camYaw),0,-Math.sin(camYaw));let dir=forward.multiplyScalar(-moveY).add(right.multiplyScalar(moveX));if(dir.length()>1)dir.normalize();player.position.addScaledVector(dir,dt*5);player.position.x=THREE.MathUtils.clamp(player.position.x,-27.5,27.5);player.position.z=THREE.MathUtils.clamp(player.position.z,-8.5,8.5);if(dir.lengthSq()>.01)player.rotation.y=Math.atan2(dir.x,dir.z);document.querySelector('#area').textContent=player.position.x < -9 ? '서쪽 수정섬' : player.position.x > 9 ? '동쪽 숲섬' : '첫 번째 섬';vy-=18*dt;player.position.y+=vy*dt;if(player.position.y<=1.2){player.position.y=1.2;vy=0;onGround=true}
+if(started){let guideDistance=player.position.distanceTo(guide.position);talkBtn.style.display=guideDistance<3.6&&!dialog.classList.contains('open')?'block':'none';if(dialog.classList.contains('open')&&saveData.forestQuestAccepted&&!saveData.forestQuestClaimed)refreshGuideQuest();if(saveData.questClaimed&&saveData.forestQuestAccepted&&!saveData.forestQuestClaimed)updatePanels();let forward=new THREE.Vector3(-Math.sin(camYaw),0,-Math.cos(camYaw)),right=new THREE.Vector3(Math.cos(camYaw),0,-Math.sin(camYaw));let dir=forward.multiplyScalar(-moveY).add(right.multiplyScalar(moveX));if(dir.length()>1)dir.normalize();player.position.addScaledVector(dir,dt*5);player.position.x=THREE.MathUtils.clamp(player.position.x,-27.5,27.5);player.position.z=THREE.MathUtils.clamp(player.position.z,-8.5,8.5);if(dir.lengthSq()>.01)player.rotation.y=Math.atan2(dir.x,dir.z);document.querySelector('#area').textContent=player.position.x < -9 ? '서쪽 수정섬' : player.position.x > 9 ? '동쪽 숲섬' : '첫 번째 섬';vy-=18*dt;player.position.y+=vy*dt;if(player.position.y<=1.2){player.position.y=1.2;vy=0;onGround=true}
 for(const c of crystals){if(c.visible&&player.position.distanceTo(c.position)<1.35){c.visible=false;collected++;updatePanels();saveGame();if(collected===16){let t=document.querySelector('#toast');t.style.opacity=1;setTimeout(()=>t.style.opacity=0,3000)}}}}
 if(started&&elapsed-lastAutoSave>2){saveGame();lastAutoSave=elapsed}
 let target=new THREE.Vector3(player.position.x,player.position.y+1.2,player.position.z);let dist=9;camera.position.set(target.x+Math.sin(camYaw)*dist,target.y+5,target.z+Math.cos(camYaw)*dist);camera.lookAt(target);renderer.render(scene,camera)}
