@@ -89,12 +89,13 @@ joy.addEventListener('pointerdown',e=>{joy.setPointerCapture(e.pointerId);joyMov
 document.querySelector('#jump').addEventListener('pointerdown',()=>{if(onGround){vy=7.5;onGround=false}});
 renderer.domElement.addEventListener('pointerdown',e=>{if(e.clientX>innerWidth*.35){drag=true;lastX=e.clientX;lastY=e.clientY;renderer.domElement.setPointerCapture(e.pointerId)}});renderer.domElement.addEventListener('pointermove',e=>{if(drag){camYaw-=(e.clientX-lastX)*.006;lastX=e.clientX;lastY=e.clientY}});renderer.domElement.addEventListener('pointerup',()=>drag=false);renderer.domElement.addEventListener('pointercancel',()=>drag=false);
 document.querySelector('#go').onclick=()=>{started=true;document.querySelector('#start').style.display='none'};
-const clock=new THREE.Clock();let elapsed=0;
+const clock=new THREE.Clock();let elapsed=0,lastAutoSave=0;
 function animate(){requestAnimationFrame(animate);let dt=Math.min(clock.getDelta(),.04);elapsed+=dt;
 crystals.forEach((c,i)=>{if(c.visible){c.rotation.y+=dt*1.5;c.position.y=c.userData.baseY+Math.sin(elapsed*2+i)*.2}});
 clouds.position.x=Math.sin(elapsed*.04)*2;
 if(started){let forward=new THREE.Vector3(-Math.sin(camYaw),0,-Math.cos(camYaw)),right=new THREE.Vector3(Math.cos(camYaw),0,-Math.sin(camYaw));let dir=forward.multiplyScalar(-moveY).add(right.multiplyScalar(moveX));if(dir.length()>1)dir.normalize();player.position.addScaledVector(dir,dt*5);player.position.x=THREE.MathUtils.clamp(player.position.x,-27.5,27.5);player.position.z=THREE.MathUtils.clamp(player.position.z,-8.5,8.5);if(dir.lengthSq()>.01)player.rotation.y=Math.atan2(dir.x,dir.z);document.querySelector('#area').textContent=player.position.x < -9 ? '서쪽 수정섬' : player.position.x > 9 ? '동쪽 숲섬' : '첫 번째 섬';vy-=18*dt;player.position.y+=vy*dt;if(player.position.y<=1.2){player.position.y=1.2;vy=0;onGround=true}
 for(const c of crystals){if(c.visible&&player.position.distanceTo(c.position)<1.35){c.visible=false;collected++;updatePanels();saveGame();if(collected===16){let t=document.querySelector('#toast');t.style.opacity=1;setTimeout(()=>t.style.opacity=0,3000)}}}}
+if(started&&elapsed-lastAutoSave>2){saveGame();lastAutoSave=elapsed}
 let target=new THREE.Vector3(player.position.x,player.position.y+1.2,player.position.z);let dist=9;camera.position.set(target.x+Math.sin(camYaw)*dist,target.y+5,target.z+Math.cos(camYaw)*dist);camera.lookAt(target);renderer.render(scene,camera)}
 animate();addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
 </script>
