@@ -109,7 +109,8 @@ talkBtn.addEventListener('click',()=>{refreshGuideQuest();dialog.classList.add('
 document.querySelector('#dialogClose').addEventListener('click',()=>dialog.classList.remove('open'));
 dialogAction.addEventListener('click',()=>{if(!saveData.forestQuestAccepted){saveData.forestQuestAccepted=true;refreshGuideQuest();saveGame()}else if(!saveData.forestQuestClaimed&&forestQuestDone()){saveData.forestQuestClaimed=true;saveData.dust=(saveData.dust||0)+5;refreshGuideQuest();updatePanels();saveGame();const t=document.querySelector('#toast');t.textContent='✨ 별가루 5개 획득!';t.style.opacity=1;setTimeout(()=>{t.style.opacity=0;t.textContent='모든 수정 수집 완료!'},2200)}});
 document.querySelector('#inventoryBtn').addEventListener('click',()=>document.querySelector('#inventory').classList.toggle('open'));
-document.querySelector('#inventoryClose').addEventListener('click',()=>document.querySelector('#inventory').classList.remove('open'));\ndocument.querySelector('#restartBtn').addEventListener('click',()=>{if(confirm('정말 처음부터 다시 시작할까요? 지금까지 모은 수정과 별가루, 의뢰 진행 상황, 탐험 위치가 모두 초기화됩니다.')){localStorage.removeItem('skyIslandSaveV2');location.reload()}});
+document.querySelector('#inventoryClose').addEventListener('click',()=>document.querySelector('#inventory').classList.remove('open'));
+document.querySelector('#restartBtn').addEventListener('click',()=>{if(confirm('정말 처음부터 다시 시작할까요? 지금까지 모은 수정과 별가루, 의뢰 진행 상황, 탐험 위치가 모두 초기화됩니다.')){localStorage.removeItem('skyIslandSaveV2');location.reload()}});
 questClaim.addEventListener('click',()=>{
  let reward=0,message='';
  if(!saveData.questClaimed&&collected>=5){saveData.questClaimed=true;reward=3;message='✨ 별가루 3개 획득!'}
